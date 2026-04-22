@@ -1,0 +1,526 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountType {
+  USER
+  DIGITAL_HUMAN
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum PostScope {
+  MOMENTS
+  SQUARE
+}
+
+enum PostSource {
+  MANUAL
+  AI
+  ADMIN_IMPERSONATED
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  MENTION
+  FOLLOW
+  AI_INTERACTION
+  CHAT_MESSAGE
+  ORDER_UPDATE
+  SYSTEM
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum WalletTransactionType {
+  RECHARGE
+  PURCHASE
+  REFUND
+  ADJUSTMENT
+  REWARD
+}
+
+enum ProductType {
+  DIGITAL_HUMAN
+  GIFT
+  MERCH
+}
+
+enum ProductStatus {
+  ACTIVE
+  SOLD_OUT
+  ARCHIVED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+enum AssetType {
+  DIGITAL_HUMAN
+  GIFT
+  MERCH
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum MessageRole {
+  USER
+  DIGITAL_HUMAN
+  SYSTEM
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  AUDIO
+  SYSTEM
+}
+
+enum AiPublishTaskStatus {
+  DRAFT
+  SCHEDULED
+  PROCESSING
+  FAILED
+  PUBLISHED
+}
+
+model Account {
+  id                     String                  @id @default(cuid())
+  username               String                  @unique
+  email                  String?                 @unique
+  wechatOpenId           String?                 @unique @map("wechat_open_id")
+  wechatUnionId          String?                 @unique @map("wechat_union_id")
+  displayName            String                  @map("display_name")
+  accountType            AccountType             @map("account_type")
+  passwordHash           String                  @map("password_hash")
+  avatarUrl              String?                 @map("avatar_url")
+  tagline                String?
+  isAdmin                Boolean                 @default(false) @map("is_admin")
+  isActive               Boolean                 @default(true) @map("is_active")
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime                @updatedAt @map("updated_at")
+  userProfile            UserProfile?
+  digitalHuman           DigitalHuman?
+  posts                  Post[]                  @relation("PostAuthor")
+  comments               Comment[]
+  likes                  Like[]
+  sessions               AuthSession[]
+  outgoingFollows        Follow[]                @relation("FollowFollower")
+  incomingFollows        Follow[]                @relation("FollowFollowing")
+  sentFriendRequests     Friendship[]            @relation("FriendRequester")
+  receivedFriendRequests Friendship[]            @relation("FriendAddressee")
+  notificationsReceived  Notification[]          @relation("NotificationRecipient")
+  notificationsTriggered Notification[]          @relation("NotificationActor")
+  ownedDigitalHumans     DigitalHuman[]          @relation("DigitalHumanOwner")
+  adminTasks             AiPublishTask[]         @relation("AiTaskAdmin")
+  digitalHumanTasks      AiPublishTask[]         @relation("AiTaskDigitalHuman")
+  impersonationLogs      AdminImpersonationLog[] @relation("ImpersonationAdmin")
+  impersonatedAsLogs     AdminImpersonationLog[] @relation("ImpersonationAuthor")
+  wallet                 Wallet?
+  orders                 Order[]
+  cartItems              CartItem[]
+  assetHoldings          AssetHolding[]
+  conversationsOwned     DirectConversation[]    @relation("ConversationOwner")
+  conversationsAsHuman   DirectConversation[]    @relation("ConversationDigitalHuman")
+  sentMessages           ChatMessage[]           @relation("MessageSender")
+  productListings        Product[]               @relation("ProductDigitalHuman")
+
+  @@map("accounts")
+}
+
+model UserProfile {
+  id              String   @id @default(cuid())
+  accountId       String   @unique @map("account_id")
+  bio             String?  @db.Text
+  city            String?
+  interests       Json?
+  coverImageUrl   String?  @map("cover_image_url")
+  ownedHumanCount Int      @default(0) @map("owned_human_count")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  account         Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model DigitalHuman {
+  id             String   @id @default(cuid())
+  accountId      String   @unique @map("account_id")
+  slug           String   @unique
+  cozeBotId      String   @map("coze_bot_id")
+  personaPrompt  String   @map("persona_prompt") @db.Text
+  avatarUrl      String?  @map("avatar_url")
+  coverImageUrl  String?  @map("cover_image_url")
+  isPresale      Boolean  @default(true) @map("is_presale")
+  ownerAccountId String?  @map("owner_account_id")
+  capabilities   Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  account        Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  ownerAccount   Account? @relation("DigitalHumanOwner", fields: [ownerAccountId], references: [id], onDelete: SetNull)
+
+  @@map("digital_humans")
+}
+
+model Friendship {
+  id          String           @id @default(cuid())
+  requesterId String           @map("requester_id")
+  addresseeId String           @map("addressee_id")
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  requester   Account          @relation("FriendRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee   Account          @relation("FriendAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@map("friendships")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String   @map("follower_id")
+  followingId String   @map("following_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  follower    Account  @relation("FollowFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   Account  @relation("FollowFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+model Post {
+  id               String                 @id @default(cuid())
+  authorId         String                 @map("author_id")
+  scope            PostScope
+  source           PostSource             @default(MANUAL)
+  content          String                 @db.Text
+  isPublic         Boolean                @default(true) @map("is_public")
+  publishedAt      DateTime               @default(now()) @map("published_at")
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @updatedAt @map("updated_at")
+  author           Account                @relation("PostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  media            PostMedia[]
+  comments         Comment[]
+  likes            Like[]
+  notifications    Notification[]
+  aiPublishTask    AiPublishTask?
+  impersonationLog AdminImpersonationLog?
+
+  @@map("posts")
+}
+
+model PostMedia {
+  id        String    @id @default(cuid())
+  postId    String    @map("post_id")
+  mediaType MediaType @default(IMAGE) @map("media_type")
+  url       String
+  width     Int?
+  height    Int?
+  sortOrder Int       @default(0) @map("sort_order")
+  createdAt DateTime  @default(now()) @map("created_at")
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("post_media")
+}
+
+model Comment {
+  id            String         @id @default(cuid())
+  postId        String         @map("post_id")
+  authorId      String         @map("author_id")
+  parentId      String?        @map("parent_id")
+  content       String         @db.Text
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  post          Post           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author        Account        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent        Comment?       @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       Comment[]      @relation("CommentReplies")
+  notifications Notification[]
+
+  @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String   @map("post_id")
+  accountId String   @map("account_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, accountId])
+  @@map("likes")
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String           @map("recipient_id")
+  actorId     String?          @map("actor_id")
+  postId      String?          @map("post_id")
+  commentId   String?          @map("comment_id")
+  type        NotificationType
+  title       String
+  content     String?          @db.Text
+  payload     Json?
+  readAt      DateTime?        @map("read_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  recipient   Account          @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor       Account?         @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  post        Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment     Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model TopicStatHourly {
+  id               String   @id @default(cuid())
+  hourBucket       DateTime @map("hour_bucket")
+  keyword          String
+  score            Float    @default(0)
+  searchCount      Int      @default(0) @map("search_count")
+  interactionCount Int      @default(0) @map("interaction_count")
+  postCount        Int      @default(0) @map("post_count")
+  pinned           Boolean  @default(false)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@unique([hourBucket, keyword])
+  @@map("topic_stats_hourly")
+}
+
+model AiPublishTask {
+  id                String              @id @default(cuid())
+  digitalHumanId    String              @map("digital_human_id")
+  adminAccountId    String?             @map("admin_account_id")
+  scope             PostScope
+  topic             String
+  prompt            String?             @db.Text
+  generatedContent  String?             @map("generated_content") @db.Text
+  generateImage     Boolean             @default(false) @map("generate_image")
+  generatedImageUrl String?             @map("generated_image_url")
+  scheduledAt       DateTime?           @map("scheduled_at")
+  publishedPostId   String?             @unique @map("published_post_id")
+  status            AiPublishTaskStatus @default(DRAFT)
+  failureReason     String?             @map("failure_reason") @db.Text
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  digitalHuman      Account             @relation("AiTaskDigitalHuman", fields: [digitalHumanId], references: [id], onDelete: Cascade)
+  adminAccount      Account?            @relation("AiTaskAdmin", fields: [adminAccountId], references: [id], onDelete: SetNull)
+  publishedPost     Post?               @relation(fields: [publishedPostId], references: [id], onDelete: SetNull)
+
+  @@map("ai_publish_tasks")
+}
+
+model AdminImpersonationLog {
+  id              String    @id @default(cuid())
+  adminAccountId  String    @map("admin_account_id")
+  authorAccountId String    @map("author_account_id")
+  postId          String    @unique @map("post_id")
+  scope           PostScope
+  contentPreview  String    @map("content_preview")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  adminAccount    Account   @relation("ImpersonationAdmin", fields: [adminAccountId], references: [id], onDelete: Cascade)
+  authorAccount   Account   @relation("ImpersonationAuthor", fields: [authorAccountId], references: [id], onDelete: Cascade)
+  post            Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("admin_impersonation_logs")
+}
+
+model AuthSession {
+  id         String    @id @default(cuid())
+  accountId  String    @map("account_id")
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  lastSeenAt DateTime  @default(now()) @map("last_seen_at")
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  account    Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("auth_sessions")
+}
+
+model Wallet {
+  id           String              @id @default(cuid())
+  accountId    String              @unique @map("account_id")
+  balanceCoins Int                 @default(0) @map("balance_coins")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+  account      Account             @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+  orders       Order[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id           String                @id @default(cuid())
+  walletId     String                @map("wallet_id")
+  orderId      String?               @map("order_id")
+  type         WalletTransactionType
+  amount       Int
+  balanceAfter Int                   @map("balance_after")
+  title        String
+  description  String?               @db.Text
+  createdAt    DateTime              @default(now()) @map("created_at")
+  wallet       Wallet                @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  order        Order?                @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([walletId, createdAt])
+  @@map("wallet_transactions")
+}
+
+model Product {
+  id               String         @id @default(cuid())
+  slug             String         @unique
+  name             String
+  subtitle         String?
+  description      String?        @db.Text
+  productType      ProductType    @map("product_type")
+  status           ProductStatus  @default(ACTIVE)
+  priceCoins       Int            @map("price_coins")
+  stock            Int?
+  coverUrl         String?        @map("cover_url")
+  gallery          Json?
+  badge            String?
+  sortOrder        Int            @default(0) @map("sort_order")
+  relatedAccountId String?        @unique @map("related_account_id")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  relatedAccount   Account?       @relation("ProductDigitalHuman", fields: [relatedAccountId], references: [id], onDelete: SetNull)
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+  assetHoldings    AssetHolding[]
+
+  @@index([productType, status, sortOrder])
+  @@map("products")
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  accountId String   @map("account_id")
+  productId String   @map("product_id")
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, productId])
+  @@map("cart_items")
+}
+
+model Order {
+  id         String              @id @default(cuid())
+  accountId  String              @map("account_id")
+  walletId   String              @map("wallet_id")
+  status     OrderStatus         @default(PENDING)
+  totalCoins Int                 @map("total_coins")
+  paidAt     DateTime?           @map("paid_at")
+  createdAt  DateTime            @default(now()) @map("created_at")
+  updatedAt  DateTime            @updatedAt @map("updated_at")
+  account    Account             @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  wallet     Wallet              @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  items      OrderItem[]
+  assets     AssetHolding[]
+  ledger     WalletTransaction[]
+
+  @@index([accountId, createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String      @id @default(cuid())
+  orderId     String      @map("order_id")
+  productId   String?     @map("product_id")
+  productName String      @map("product_name")
+  productType ProductType @map("product_type")
+  unitCoins   Int         @map("unit_coins")
+  quantity    Int         @default(1)
+  coverUrl    String?     @map("cover_url")
+  snapshot    Json?
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product?    @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@map("order_items")
+}
+
+model AssetHolding {
+  id        String    @id @default(cuid())
+  accountId String    @map("account_id")
+  productId String?   @map("product_id")
+  orderId   String?   @map("order_id")
+  assetType AssetType @map("asset_type")
+  title     String
+  subtitle  String?
+  coverUrl  String?   @map("cover_url")
+  quantity  Int       @default(1)
+  metadata  Json?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  account   Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  product   Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  order     Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([accountId, assetType, createdAt])
+  @@map("asset_holdings")
+}
+
+model DirectConversation {
+  id                    String             @id @default(cuid())
+  ownerAccountId        String             @map("owner_account_id")
+  digitalHumanAccountId String             @map("digital_human_account_id")
+  status                ConversationStatus @default(ACTIVE)
+  title                 String?
+  lastMessagePreview    String?            @map("last_message_preview")
+  lastMessageAt         DateTime?          @map("last_message_at")
+  unreadCount           Int                @default(0) @map("unread_count")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+  ownerAccount          Account            @relation("ConversationOwner", fields: [ownerAccountId], references: [id], onDelete: Cascade)
+  digitalHumanAccount   Account            @relation("ConversationDigitalHuman", fields: [digitalHumanAccountId], references: [id], onDelete: Cascade)
+  messages              ChatMessage[]
+
+  @@unique([ownerAccountId, digitalHumanAccountId])
+  @@index([ownerAccountId, updatedAt])
+  @@map("direct_conversations")
+}
+
+model ChatMessage {
+  id              String             @id @default(cuid())
+  conversationId  String             @map("conversation_id")
+  senderAccountId String?            @map("sender_account_id")
+  role            MessageRole
+  messageType     MessageType        @map("message_type")
+  textContent     String?            @map("text_content") @db.Text
+  mediaUrl        String?            @map("media_url")
+  mediaMimeType   String?            @map("media_mime_type")
+  durationSeconds Int?               @map("duration_seconds")
+  transcription   String?            @db.Text
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+  conversation    DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderAccount   Account?           @relation("MessageSender", fields: [senderAccountId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId, createdAt])
+  @@map("chat_messages")
+}

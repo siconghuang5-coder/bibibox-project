@@ -1,0 +1,290 @@
+:root {
+  font-family: 'SF Pro Display', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  color: #12202f;
+  background:
+    radial-gradient(circle at top left, rgba(68, 153, 255, 0.18), transparent 32%),
+    linear-gradient(180deg, #edf5ff 0%, #f8fbff 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  color: #12202f;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #4f8cff;
+}
+
+.admin-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.login-panel {
+  width: min(980px, 100%);
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 24px;
+  padding: 28px;
+  border-radius: 28px;
+  border: 1px solid rgba(79, 140, 255, 0.14);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 28px 80px rgba(20, 53, 102, 0.16);
+}
+
+.login-copy {
+  padding: 12px;
+}
+
+.login-form {
+  padding: 12px;
+}
+
+.login-form .el-button {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.admin-root {
+  min-height: 100vh;
+}
+
+.admin-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+}
+
+.admin-sidebar {
+  padding: 22px;
+  background: #0f2235;
+  color: #ecf6ff;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sidebar-brand h2,
+.main-header h1 {
+  margin: 0;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nav-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  cursor: pointer;
+}
+
+.nav-button.active {
+  background: linear-gradient(135deg, rgba(79, 140, 255, 0.3), rgba(28, 195, 216, 0.28));
+  border-color: rgba(117, 187, 255, 0.44);
+}
+
+.nav-button.logout {
+  margin-top: auto;
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-main {
+  padding: 24px;
+}
+
+.main-header,
+.hero-card,
+.metric-card,
+.page-stack,
+.page-grid,
+.audit-item,
+.draft-card,
+.notification-bubble,
+.user-cell {
+  border-radius: 20px;
+}
+
+.main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.notification-bubble {
+  padding: 10px 14px;
+  background: rgba(79, 140, 255, 0.12);
+  color: #2c5fb8;
+}
+
+.page-stack,
+.page-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.page-grid.two-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.hero-card,
+.metric-card,
+.audit-item,
+.draft-card {
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(79, 140, 255, 0.12);
+  box-shadow: 0 16px 40px rgba(17, 51, 104, 0.09);
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 12px;
+  font-size: 32px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.toolbar.compact {
+  justify-content: flex-start;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.muted-text {
+  color: #708199;
+  font-size: 13px;
+}
+
+.topic-pills {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.topic-pill {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(79, 140, 255, 0.09);
+  color: #2c5fb8;
+}
+
+.topic-pill.pinned {
+  background: rgba(255, 142, 75, 0.14);
+  color: #a95b27;
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mini-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.json-view {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  padding: 16px;
+  border-radius: 16px;
+  background: #0f2235;
+  color: #dcecff;
+  overflow: auto;
+}
+
+.draft-content {
+  line-height: 1.7;
+  margin: 14px 0;
+}
+
+.audit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty-state {
+  padding: 24px;
+  border-radius: 16px;
+  background: rgba(79, 140, 255, 0.06);
+  color: #708199;
+}
+
+@media (max-width: 1100px) {
+  .admin-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .page-grid.two-columns,
+  .metric-grid,
+  .login-panel {
+    grid-template-columns: 1fr;
+  }
+}
