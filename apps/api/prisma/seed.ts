@@ -522,7 +522,7 @@ async function main() {
     authorId: nova.id,
     scope: PostScope.MOMENTS,
     content: '今天第一次把“我持有的数字人”和朋友的动态混到一个流里看，体验意外地顺。#一期体验 #AI社交',
-    media: ['/static/moments-sunset.png'],
+    media: ['/static/Luna.png'],
   });
   const mobaiPost = await seedPost({
     authorId: mobo.id,
