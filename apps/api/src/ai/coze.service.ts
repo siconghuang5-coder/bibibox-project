@@ -26,7 +26,7 @@ interface GenerateChatReplyInput {
 export class CozeService {
   private readonly logger = new Logger(CozeService.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) { }
 
   async generatePostDraft(input: GeneratePostDraftInput) {
     const customPrompt = input.prompt?.trim();
