@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 export const TOKEN_KEY = 'ai-social-ops-admin-token';
+export const LOGOUT_KEY = 'ai-social-ops-admin-logging-out';
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
@@ -22,6 +23,15 @@ export async function get<T>(url: string, params?: Record<string, unknown>) {
 
 export async function post<T>(url: string, data?: unknown) {
   const response = await api.post<T>(url, data);
+  return response.data;
+}
+
+export async function postWithToken<T>(url: string, token: string, data?: unknown) {
+  const response = await api.post<T>(url, data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   return response.data;
 }
 

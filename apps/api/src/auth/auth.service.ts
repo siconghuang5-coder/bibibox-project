@@ -237,7 +237,28 @@ export class AuthService {
         holdings: assetsCount,
         orders: ordersCount,
       },
-      ownedDigitalHumans,
+      ownedDigitalHumans: ownedDigitalHumans.map((item) => ({
+        id: item.id,
+        accountId: item.accountId,
+        slug: item.slug,
+        avatarUrl: item.avatarUrl,
+        coverImageUrl: item.coverImageUrl,
+        isPresale: item.isPresale,
+        ownerAccountId: item.ownerAccountId,
+        capabilities: item.capabilities,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        account: {
+          id: item.account.id,
+          username: item.account.username,
+          displayName: item.account.displayName,
+          accountType: item.account.accountType,
+          avatarUrl: item.account.avatarUrl,
+          tagline: item.account.tagline,
+          isAdmin: item.account.isAdmin,
+          isActive: item.account.isActive,
+        },
+      })),
     };
   }
 

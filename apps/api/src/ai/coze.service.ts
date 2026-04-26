@@ -26,7 +26,7 @@ interface GenerateChatReplyInput {
 export class CozeService {
   private readonly logger = new Logger(CozeService.name);
 
-  constructor(private readonly configService: ConfigService) { }
+  constructor(private readonly configService: ConfigService) {}
 
   async generatePostDraft(input: GeneratePostDraftInput) {
     const customPrompt = input.prompt?.trim();
@@ -86,7 +86,7 @@ export class CozeService {
       throw new Error('missing Coze token');
     }
 
-    const chatInitResponse = await fetch(`${baseUrl}/v3/chat`, {
+    const response = await fetch(`${baseUrl}/v3/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -101,58 +101,22 @@ export class CozeService {
             role: 'user',
             content: prompt,
             content_type: 'text',
+            type: 'question',
           },
         ],
       }),
     });
 
-    if (!chatInitResponse.ok) {
-      const err = await chatInitResponse.text();
-      throw new Error(`Coze request failed with ${chatInitResponse.status}: ${err}`);
+    if (!response.ok) {
+      throw new Error(`Coze request failed with ${response.status}`);
     }
 
-    const initData = (await chatInitResponse.json()) as any;
-    const chatId = initData?.data?.id;
-    const conversationId = initData?.data?.conversation_id;
-
-    if (!chatId || !conversationId) {
-      console.error('Coze V3 Init Error:', JSON.stringify(initData, null, 2));
-      throw new Error(`Coze V3 missing chat/conversation ID: ${JSON.stringify(initData)}`);
-    }
-
-    let status = initData?.data?.status;
-    let attempts = 0;
-    while (status !== 'completed' && attempts < 20) {
-      if (status === 'failed' || status === 'canceled') {
-        throw new Error(`Coze chat failed with status ${status}`);
-      }
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      const retrieveRes = await fetch(
-        `${baseUrl}/v3/chat/retrieve?conversation_id=${conversationId}&chat_id=${chatId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      const retrieveData = (await retrieveRes.json()) as any;
-      status = retrieveData?.data?.status;
-      attempts++;
-    }
-
-    if (status !== 'completed') {
-      throw new Error('Coze chat timeout');
-    }
-
-    const msgListRes = await fetch(
-      `${baseUrl}/v3/chat/message/list?conversation_id=${conversationId}&chat_id=${chatId}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      },
-    );
-    const msgListData = (await msgListRes.json()) as any;
-    const answerMessage = msgListData?.data?.find(
-      (item: any) => item.type === 'answer' && item.role === 'assistant',
-    );
-    const message = answerMessage?.content;
+    const data = (await response.json()) as Record<string, any>;
+    const message =
+      data?.messages?.find?.((item: any) => item.type === 'answer')?.content ||
+      data?.data?.messages?.find?.((item: any) => item.type === 'answer')?.content ||
+      data?.data?.content ||
+      data?.content;
 
     if (!message || typeof message !== 'string') {
       throw new Error('Coze response missing answer');

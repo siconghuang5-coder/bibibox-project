@@ -1,0 +1,28 @@
+{
+  "name": "ai-social-phase-one",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/h5",
+    "apps/admin",
+    "apps/ops-admin",
+    "apps/api"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "build:api": "npm run build --workspace apps/api",
+    "build:admin": "npm run build --workspace apps/admin",
+    "build:ops-admin": "npm run build --workspace apps/ops-admin",
+    "build:h5": "npm run build --workspace apps/h5"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "picomatch": "^4.0.4",
+    "vite": "^7.3.2"
+  },
+  "overrides": {
+    "ajv": "^8.20.0",
+    "picomatch": "^4.0.4",
+    "vite": "^7.3.2"
+  }
+}

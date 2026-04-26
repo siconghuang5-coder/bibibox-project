@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 export const TOKEN_KEY = 'ai-social-admin-token';
+export const LOGOUT_KEY = 'ai-social-admin-logging-out';
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
@@ -25,8 +26,16 @@ export async function post<T>(url: string, data?: unknown) {
   return response.data;
 }
 
+export async function postWithToken<T>(url: string, token: string, data?: unknown) {
+  const response = await api.post<T>(url, data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+}
+
 export async function patch<T>(url: string, data?: unknown) {
   const response = await api.patch<T>(url, data);
   return response.data;
 }
-

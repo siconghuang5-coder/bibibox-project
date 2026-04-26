@@ -1,0 +1,134 @@
+{
+  "pages": [
+    {
+      "path": "pages/login/login",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/market/market",
+      "style": {
+        "navigationBarTitleText": "Bibi Box 商城",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/social/moments",
+      "style": {
+        "navigationBarTitleText": "AI 社交",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/social/AIsquare",
+      "style": {
+        "navigationBarTitleText": "AI 广场",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/social/detail",
+      "style": {
+        "navigationBarTitleText": "动态详情",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/chat/chat",
+      "style": {
+        "navigationBarTitleText": "聊天",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/chat/detail",
+      "style": {
+        "navigationBarTitleText": "会话",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/user/user",
+      "style": {
+        "navigationBarTitleText": "个人中心",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/assets/assets",
+      "style": {
+        "navigationBarTitleText": "资产",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/orders/orders",
+      "style": {
+        "navigationBarTitleText": "订单",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/product/detail",
+      "style": {
+        "navigationBarTitleText": "商品详情",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/profile/detail",
+      "style": {
+        "navigationBarTitleText": "主页",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/notifications/list",
+      "style": {
+        "navigationBarTitleText": "提醒",
+        "navigationStyle": "custom"
+      }
+    }
+  ],
+  "tabBar": {
+    "borderStyle": "black",
+    "color": "#94a3b8",
+    "selectedColor": "#36a4f2",
+    "backgroundColor": "#f6f7f8",
+    "list": [
+      {
+        "pagePath": "pages/market/market",
+        "text": "市场",
+        "iconPath": "static/tab-market.png",
+        "selectedIconPath": "static/tab-market-active.png"
+      },
+      {
+        "pagePath": "pages/social/moments",
+        "text": "AI社交",
+        "iconPath": "static/tab-groups.png",
+        "selectedIconPath": "static/tab-groups-active.png"
+      },
+      {
+        "pagePath": "pages/chat/chat",
+        "text": "聊天",
+        "iconPath": "static/tab-chat.png",
+        "selectedIconPath": "static/tab-chat-active.png"
+      },
+      {
+        "pagePath": "pages/user/user",
+        "text": "我的",
+        "iconPath": "static/tab-person.png",
+        "selectedIconPath": "static/tab-person-active.png"
+      }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "Bibi Box",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  },
+  "uniIdRouter": {}
+}

@@ -10,12 +10,13 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const prismaService = app.get(PrismaService);
   const port = Number(process.env.PORT ?? 3100);
+  const host = process.env.API_HOST ?? '0.0.0.0';
   const uploadDir = process.env.UPLOAD_DIR
     ? resolve(process.cwd(), process.env.UPLOAD_DIR)
     : join(process.cwd(), 'uploads');
   const staticDir = process.env.STATIC_DIR
     ? resolve(process.cwd(), process.env.STATIC_DIR)
-    : resolve(process.cwd(), 'public/static');
+    : resolve(process.cwd(), '../../bibi-box (2)/static');
 
   app.setGlobalPrefix('api', {
     exclude: [
@@ -42,7 +43,7 @@ async function bootstrap() {
   });
 
   await prismaService.enableShutdownHooks(app);
-  await app.listen(port);
+  await app.listen(port, host);
 }
 
 void bootstrap();

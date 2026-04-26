@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { io, type Socket } from 'socket.io-client';
-import { get, post, TOKEN_KEY } from '../lib/api';
+import { get, LOGOUT_KEY, post, postWithToken, TOKEN_KEY } from '../lib/api';
 
 interface AdminSession {
   token: string;
@@ -55,6 +55,7 @@ export const useAdminSessionStore = defineStore('adminSession', () => {
       if (!response.account.isAdmin) {
         throw new Error('当前账号不是管理员');
       }
+      sessionStorage.removeItem(LOGOUT_KEY);
       token.value = response.token;
       localStorage.setItem(TOKEN_KEY, response.token);
       account.value = response.account;
@@ -66,12 +67,19 @@ export const useAdminSessionStore = defineStore('adminSession', () => {
   }
 
   async function logout() {
-    try {
-      if (token.value) {
-        await post('/auth/logout');
-      }
-    } finally {
+    const currentToken = token.value;
+    sessionStorage.setItem(LOGOUT_KEY, '1');
+    if (currentToken) {
+      window.setTimeout(() => {
+        clear();
+        sessionStorage.removeItem(LOGOUT_KEY);
+        void postWithToken('/auth/logout', currentToken).catch((error) => {
+          console.warn('服务端退出登录失败，本地登录态已清理', error);
+        });
+      }, 5000);
+    } else {
       clear();
+      sessionStorage.removeItem(LOGOUT_KEY);
     }
   }
 
@@ -108,4 +116,3 @@ export const useAdminSessionStore = defineStore('adminSession', () => {
     logout,
   };
 });
-

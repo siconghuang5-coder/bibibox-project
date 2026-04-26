@@ -130,7 +130,22 @@ export class AdminService {
     }
 
     return {
-      account,
+      account: {
+        id: account.id,
+        username: account.username,
+        email: account.email,
+        displayName: account.displayName,
+        accountType: account.accountType,
+        avatarUrl: account.avatarUrl,
+        tagline: account.tagline,
+        isAdmin: account.isAdmin,
+        isActive: account.isActive,
+        createdAt: account.createdAt,
+        updatedAt: account.updatedAt,
+        userProfile: account.userProfile,
+        digitalHuman: account.digitalHuman,
+        posts: account.posts,
+      },
       stats: {
         followers: await this.prisma.follow.count({ where: { followingId: id } }),
         following: await this.prisma.follow.count({ where: { followerId: id } }),

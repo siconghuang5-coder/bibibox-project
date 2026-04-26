@@ -1,5 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
-import { TOKEN_KEY } from './lib/api';
+import { LOGOUT_KEY, TOKEN_KEY } from './lib/api';
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -20,10 +20,11 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const hasToken = Boolean(localStorage.getItem(TOKEN_KEY));
-  if (to.name !== 'login' && !hasToken) {
+  const isLoggingOut = sessionStorage.getItem(LOGOUT_KEY) === '1';
+  if (to.name !== 'login' && (!hasToken || isLoggingOut)) {
     return { name: 'login' };
   }
-  if (to.name === 'login' && hasToken) {
+  if (to.name === 'login' && hasToken && !isLoggingOut) {
     return { name: 'dashboard' };
   }
   return true;

@@ -14,11 +14,22 @@ API_ROOT="/www/wwwroot/ai-social-api"
 ARCHIVE="/www/wwwroot/ai-social-api-src.tar.gz"
 DB_NAME="ai_social"
 DB_USER="ai_social_user"
-DB_PASS="AiSocial@2026!"
+DB_PASS="${DB_PASS:-}"
+WECHAT_MINI_APPID="${WECHAT_MINI_APPID:-wxad915b4cd0ef02b9}"
+WECHAT_MINI_SECRET="${WECHAT_MINI_SECRET:-}"
 
 echo "=========================================="
 echo " AI 社交一期 - 部署开始"
 echo "=========================================="
+
+if [ -z "$DB_PASS" ]; then
+  echo "[错误] 请先设置数据库密码，例如：DB_PASS='your-password' bash deploy/server-deploy.sh"
+  exit 1
+fi
+
+if [ -z "$WECHAT_MINI_SECRET" ]; then
+  echo "[提示] 未设置 WECHAT_MINI_SECRET，部署会继续，但微信登录不可用"
+fi
 
 # ------- 1. 检查 Node.js -------
 if ! command -v node &>/dev/null; then
@@ -27,6 +38,9 @@ if ! command -v node &>/dev/null; then
 fi
 NODE_VER=$(node -v)
 echo "[✓] Node.js: $NODE_VER"
+DB_USER_URL=$(node -e "process.stdout.write(encodeURIComponent(process.argv[1] || ''))" "$DB_USER")
+DB_PASS_URL=$(node -e "process.stdout.write(encodeURIComponent(process.argv[1] || ''))" "$DB_PASS")
+DB_PASS_SQL=${DB_PASS//\'/\'\'}
 
 # ------- 2. 检查 MySQL -------
 if ! command -v mysql &>/dev/null; then
@@ -49,10 +63,10 @@ echo ">>> 创建数据库 $DB_NAME ..."
 mysql -u root -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || {
   echo "[提示] 如果 MySQL 需要密码，请手动执行："
   echo "  mysql -u root -p -e \"CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\""
-  echo "  mysql -u root -p -e \"CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';\""
+  echo "  mysql -u root -p -e \"CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS_SQL';\""
   echo "  mysql -u root -p -e \"GRANT ALL ON $DB_NAME.* TO '$DB_USER'@'localhost'; FLUSH PRIVILEGES;\""
 }
-mysql -u root -e "CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';" 2>/dev/null || true
+mysql -u root -e "CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS_SQL';" 2>/dev/null || true
 mysql -u root -e "GRANT ALL ON \`$DB_NAME\`.* TO '$DB_USER'@'localhost'; FLUSH PRIVILEGES;" 2>/dev/null || true
 echo "[✓] 数据库就绪"
 
@@ -106,10 +120,10 @@ NODE_ENV=production
 PORT=3100
 APP_ORIGIN=http://110.42.229.152:3000
 ADMIN_ORIGIN=http://110.42.229.152:3000/admin
-DATABASE_URL=mysql://${DB_USER}:${DB_PASS}@127.0.0.1:3306/${DB_NAME}
+DATABASE_URL=mysql://${DB_USER_URL}:${DB_PASS_URL}@127.0.0.1:3306/${DB_NAME}
 SESSION_TTL_DAYS=14
-WECHAT_MINI_APPID=wxad915b4cd0ef02b9
-WECHAT_MINI_SECRET=9415c0bfdcc080e84535a6e0718bd9dd
+WECHAT_MINI_APPID=${WECHAT_MINI_APPID}
+WECHAT_MINI_SECRET=${WECHAT_MINI_SECRET}
 COZE_API_TOKEN=
 COZE_BASE_URL=https://api.coze.cn
 COZE_IMAGE_WORKFLOW_ID=
@@ -129,17 +143,17 @@ echo "[✓] 依赖安装完成"
 # ------- 9. Prisma 生成 + 数据库迁移 + 种子数据 -------
 echo ""
 echo ">>> Prisma generate ..."
-npm run db:generate
+npm run prisma:generate --workspace @ai-social/api
 echo "[✓] Prisma client 已生成"
 
 echo ""
 echo ">>> 数据库迁移 ..."
-npm run db:migrate:prod
+npm run prisma:migrate:deploy --workspace @ai-social/api
 echo "[✓] 数据库迁移完成"
 
 echo ""
 echo ">>> 种子数据 ..."
-npm run db:seed
+npm run prisma:seed --workspace @ai-social/api
 echo "[✓] 种子数据已写入"
 
 # ------- 10. 构建 API -------
@@ -233,9 +247,17 @@ server {
         expires 30d;
     }
 
+    location = /admin {
+        return 301 /admin/;
+    }
+
     location /admin/ {
         alias /www/wwwroot/110.42.229.152_3000/admin/;
         try_files $uri $uri/ /admin/index.html;
+    }
+
+    location = /ops-admin {
+        return 301 /ops-admin/;
     }
 
     location /ops-admin/ {

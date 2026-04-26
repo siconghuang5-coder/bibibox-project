@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
-  base: '/admin/',
+  base: '/ops-admin/',
   plugins: [vue()],
   build: {
     chunkSizeWarningLimit: 1200,

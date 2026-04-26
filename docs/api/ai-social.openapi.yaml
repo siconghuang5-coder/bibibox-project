@@ -1,0 +1,3358 @@
+openapi: 3.0.3
+info:
+  title: AI Social MVP API
+  version: 1.0.0
+  description: |
+    面向 H5、小程序、`apps/admin`、`apps/ops-admin` 的统一后端接口契约。
+
+    这份文件可直接用于：
+    - 前端联调
+    - 测试编写接口用例
+    - 导入 Apifox / Postman / Swagger UI
+
+    默认本地服务地址：
+    - API: `http://127.0.0.1:3100`
+    - 绝大多数业务接口带 `/api` 前缀
+    - 例外接口：`GET /health`、`POST /auth/wechat`
+servers:
+  - url: http://127.0.0.1:3100
+    description: Local development
+tags:
+  - name: Health
+  - name: Auth
+  - name: Notifications
+  - name: Social
+  - name: Commerce
+  - name: Chat
+  - name: Admin
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: 健康检查
+      operationId: getHealth
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: 用户注册
+      operationId: registerAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: 账号密码登录
+      operationId: loginAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '201':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/wechat/login:
+    post:
+      tags: [Auth]
+      summary: 微信 code 登录标准接口
+      operationId: wechatLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WechatLoginRequest'
+      responses:
+        '201':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WechatSessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/wechat:
+    post:
+      tags: [Auth]
+      summary: 微信小程序兼容登录接口
+      description: 兼容旧版小程序逻辑，返回结构与标准微信登录类似，额外带 `compatMode`
+      operationId: compatWechatLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WechatLoginRequest'
+      responses:
+        '201':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WechatSessionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: 注销当前 token
+      operationId: logoutAccount
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: 注销成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: 获取当前会话资料
+      operationId: getCurrentSession
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 当前用户资料
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentSessionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: 获取通知列表
+      operationId: listNotifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 通知列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/notifications/read:
+    post:
+      tags: [Notifications]
+      summary: 批量已读指定通知
+      operationId: readNotifications
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationReadRequest'
+      responses:
+        '201':
+          description: 标记成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationReadResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: 全部通知标记已读
+      operationId: readAllNotifications
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: 标记成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationReadResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: 获取通知未读数
+      operationId: getNotificationUnreadCount
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 未读统计
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnreadSummaryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/moments/feed:
+    get:
+      tags: [Social]
+      summary: 获取朋友圈 feed
+      operationId: getMomentsFeed
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 朋友圈动态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MomentsFeedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/square/feed:
+    get:
+      tags: [Social]
+      summary: 获取广场 feed
+      operationId: getSquareFeed
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 广场动态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SquareFeedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/posts:
+    post:
+      tags: [Social]
+      summary: 发布动态
+      operationId: createPost
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePostRequest'
+      responses:
+        '201':
+          description: 发布成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/uploads/images:
+    post:
+      tags: [Social]
+      summary: 上传社交图片
+      operationId: uploadPostImages
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: 最多 4 张图片
+      responses:
+        '201':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadImagesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/posts/{postId}:
+    get:
+      tags: [Social]
+      summary: 获取单条动态详情
+      operationId: getPostDetail
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      responses:
+        '200':
+          description: 动态详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/posts/{postId}/comments:
+    get:
+      tags: [Social]
+      summary: 获取动态评论列表
+      operationId: listPostComments
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 评论列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostCommentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Social]
+      summary: 给动态发表评论
+      operationId: createPostComment
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '201':
+          description: 评论成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostComment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/posts/{postId}/like:
+    post:
+      tags: [Social]
+      summary: 点赞或取消点赞
+      operationId: togglePostLike
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      responses:
+        '201':
+          description: 点赞状态变更
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/comments/{commentId}/reply:
+    post:
+      tags: [Social]
+      summary: 回复评论
+      operationId: replyComment
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CommentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '201':
+          description: 回复成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostComment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/posts/{postId}/mentions:
+    post:
+      tags: [Social]
+      summary: 提及用户
+      operationId: mentionUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MentionUsersRequest'
+      responses:
+        '201':
+          description: 提及成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentionUsersResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/search/users:
+    get:
+      tags: [Social]
+      summary: 搜索用户或数字人
+      operationId: searchUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SearchQ'
+      responses:
+        '200':
+          description: 搜索结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchUsersResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/profiles/{accountId}:
+    get:
+      tags: [Social]
+      summary: 获取用户主页
+      operationId: getProfile
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: 主页信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/follows/{accountId}:
+    post:
+      tags: [Social]
+      summary: 关注或取消关注
+      operationId: toggleFollow
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '201':
+          description: 关注状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/friends/{accountId}/request:
+    post:
+      tags: [Social]
+      summary: 发起好友申请
+      operationId: requestFriend
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '201':
+          description: 发起成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/friends/{requestId}/accept:
+    post:
+      tags: [Social]
+      summary: 接受好友申请
+      operationId: acceptFriend
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '201':
+          description: 接受成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/market/home:
+    get:
+      tags: [Commerce]
+      summary: 获取商城首页聚合数据
+      operationId: getMarketHome
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 商城首页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketHomeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/products:
+    get:
+      tags: [Commerce]
+      summary: 获取商品列表
+      operationId: listProducts
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductTypeQuery'
+        - $ref: '#/components/parameters/SearchQ'
+      responses:
+        '200':
+          description: 商品列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/products/{productId}:
+    get:
+      tags: [Commerce]
+      summary: 获取商品详情
+      operationId: getProductDetail
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: 商品详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/cart:
+    get:
+      tags: [Commerce]
+      summary: 获取购物车
+      operationId: getCart
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 购物车
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/cart/items:
+    post:
+      tags: [Commerce]
+      summary: 新增或更新购物车项
+      operationId: upsertCartItem
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemRequest'
+      responses:
+        '201':
+          description: 更新后的购物车
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/cart/products/{productId}:
+    patch:
+      tags: [Commerce]
+      summary: 修改购物车中某商品数量
+      operationId: patchCartItem
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchCartItemRequest'
+      responses:
+        '200':
+          description: 更新后的购物车
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/cart/items/{cartItemId}:
+    delete:
+      tags: [Commerce]
+      summary: 删除购物车项
+      operationId: deleteCartItem
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CartItemId'
+      responses:
+        '200':
+          description: 删除后的购物车
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/wallet/recharge:
+    post:
+      tags: [Commerce]
+      summary: 钱包充值
+      operationId: rechargeWallet
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RechargeRequest'
+      responses:
+        '201':
+          description: 充值成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletBalance'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/orders/checkout:
+    post:
+      tags: [Commerce]
+      summary: 下单结算
+      operationId: checkoutOrder
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+      responses:
+        '201':
+          description: 结算成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/orders:
+    get:
+      tags: [Commerce]
+      summary: 获取当前用户订单列表
+      operationId: listOrders
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 订单列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/assets:
+    get:
+      tags: [Commerce]
+      summary: 获取当前用户资产页
+      operationId: getAssetsDashboard
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 资产页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetsDashboardResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/chat/conversations:
+    get:
+      tags: [Chat]
+      summary: 获取会话列表
+      operationId: listConversations
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 会话列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Chat]
+      summary: 确保某个数字人会话存在
+      operationId: ensureConversation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnsureConversationRequest'
+      responses:
+        '201':
+          description: 会话对象
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/chat/conversations/{conversationId}:
+    get:
+      tags: [Chat]
+      summary: 获取会话详情和消息分页
+      operationId: getConversationDetail
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 会话详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/chat/conversations/{conversationId}/messages:
+    post:
+      tags: [Chat]
+      summary: 发送消息
+      operationId: sendChatMessage
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '201':
+          description: 发送成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendMessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/chat/conversations/{conversationId}/read:
+    post:
+      tags: [Chat]
+      summary: 标记会话已读
+      operationId: readConversation
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+      responses:
+        '201':
+          description: 标记成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/chat/unread-summary:
+    get:
+      tags: [Chat]
+      summary: 获取聊天未读汇总
+      operationId: getChatUnreadSummary
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 未读统计
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnreadSummaryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/chat/uploads/image:
+    post:
+      tags: [Chat]
+      summary: 上传聊天图片
+      operationId: uploadChatImage
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadMediaResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/chat/uploads/audio:
+    post:
+      tags: [Chat]
+      summary: 上传聊天音频
+      operationId: uploadChatAudio
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadMediaResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/admin/overview:
+    get:
+      tags: [Admin]
+      summary: 获取运营总览
+      operationId: getAdminOverview
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 运营总览
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOverviewResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/admin/users:
+    get:
+      tags: [Admin]
+      summary: 获取后台用户列表
+      operationId: listAdminUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SearchQ'
+        - $ref: '#/components/parameters/AccountTypeQuery'
+      responses:
+        '200':
+          description: 用户列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/admin/users/{accountId}:
+    get:
+      tags: [Admin]
+      summary: 获取后台用户详情
+      operationId: getAdminUserDetail
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: 用户详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/posts:
+    get:
+      tags: [Admin]
+      summary: 获取后台动态列表
+      operationId: listAdminPosts
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SearchQ'
+        - $ref: '#/components/parameters/PostScopeQuery'
+        - $ref: '#/components/parameters/PostSourceQuery'
+      responses:
+        '200':
+          description: 动态列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPostListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/admin/posts/impersonate:
+    post:
+      tags: [Admin]
+      summary: 后台代发动态
+      operationId: impersonatePost
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminImpersonateRequest'
+      responses:
+        '201':
+          description: 代发成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/products:
+    get:
+      tags: [Admin]
+      summary: 获取后台商品目录
+      operationId: listAdminProducts
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SearchQ'
+        - $ref: '#/components/parameters/ProductTypeQuery'
+      responses:
+        '200':
+          description: 商品列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProductListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Admin]
+      summary: 新增或编辑商品
+      operationId: upsertAdminProduct
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUpsertProductRequest'
+      responses:
+        '201':
+          description: 保存成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProductWriteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/orders:
+    get:
+      tags: [Admin]
+      summary: 获取后台订单流水
+      operationId: listAdminOrders
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SearchQ'
+      responses:
+        '200':
+          description: 订单列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminOrderListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/admin/assets:
+    get:
+      tags: [Admin]
+      summary: 获取后台资产列表
+      operationId: listAdminAssets
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SearchQ'
+      responses:
+        '200':
+          description: 资产列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminAssetListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/admin/chats:
+    get:
+      tags: [Admin]
+      summary: 获取后台会话巡检列表
+      operationId: listAdminChats
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SearchQ'
+      responses:
+        '200':
+          description: 会话巡检列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminConversationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/admin/ai-publish/generate:
+    post:
+      tags: [Admin]
+      summary: 生成数字人发帖草稿
+      operationId: generateAdminDraft
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminGenerateDraftRequest'
+      responses:
+        '201':
+          description: 草稿生成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDraftResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/ai-publish/publish:
+    post:
+      tags: [Admin]
+      summary: 立即发布数字人 AI 动态
+      operationId: publishAdminDraft
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminPublishDraftRequest'
+      responses:
+        '201':
+          description: 发布成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/ai-publish/schedule:
+    post:
+      tags: [Admin]
+      summary: 定时发布数字人 AI 动态
+      operationId: scheduleAdminDraft
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminScheduleDraftRequest'
+      responses:
+        '201':
+          description: 定时任务创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminScheduledTaskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/notifications:
+    get:
+      tags: [Admin]
+      summary: 获取后台通知审计列表
+      operationId: listAdminNotifications
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 通知审计列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminNotificationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/admin/topics/{topicId}/pin:
+    patch:
+      tags: [Admin]
+      summary: 热搜置顶或取消置顶
+      operationId: pinAdminTopic
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TopicId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminPinTopicRequest'
+      responses:
+        '200':
+          description: 更新后的热搜记录
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTopic'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Token
+
+  parameters:
+    Page:
+      in: query
+      name: page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      in: query
+      name: pageSize
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 10
+    SearchQ:
+      in: query
+      name: q
+      required: false
+      schema:
+        type: string
+    AccountTypeQuery:
+      in: query
+      name: accountType
+      required: false
+      schema:
+        $ref: '#/components/schemas/AccountType'
+    PostScopeQuery:
+      in: query
+      name: scope
+      required: false
+      schema:
+        $ref: '#/components/schemas/PostScope'
+    PostSourceQuery:
+      in: query
+      name: source
+      required: false
+      schema:
+        $ref: '#/components/schemas/PostSource'
+    ProductTypeQuery:
+      in: query
+      name: productType
+      required: false
+      schema:
+        $ref: '#/components/schemas/ProductType'
+    PostId:
+      in: path
+      name: postId
+      required: true
+      schema:
+        type: string
+    CommentId:
+      in: path
+      name: commentId
+      required: true
+      schema:
+        type: string
+    AccountId:
+      in: path
+      name: accountId
+      required: true
+      schema:
+        type: string
+    ProductId:
+      in: path
+      name: productId
+      required: true
+      schema:
+        type: string
+    CartItemId:
+      in: path
+      name: cartItemId
+      required: true
+      schema:
+        type: string
+    ConversationId:
+      in: path
+      name: conversationId
+      required: true
+      schema:
+        type: string
+    RequestId:
+      in: path
+      name: requestId
+      required: true
+      schema:
+        type: string
+    TopicId:
+      in: path
+      name: topicId
+      required: true
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: 未登录或 token 无效
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: 权限不足
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    AccountType:
+      type: string
+      enum: [USER, DIGITAL_HUMAN]
+    PostScope:
+      type: string
+      enum: [MOMENTS, SQUARE]
+    PostSource:
+      type: string
+      enum: [MANUAL, AI, ADMIN_IMPERSONATED]
+    ProductType:
+      type: string
+      enum: [DIGITAL_HUMAN, GIFT, MERCH]
+    ProductStatus:
+      type: string
+      enum: [ACTIVE, SOLD_OUT, ARCHIVED]
+    MessageType:
+      type: string
+      enum: [TEXT, IMAGE, AUDIO, SYSTEM]
+    NotificationType:
+      type: string
+      enum: [LIKE, COMMENT, MENTION, FOLLOW, AI_INTERACTION, CHAT_MESSAGE, ORDER_UPDATE, SYSTEM]
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: 账号或密码错误
+        error:
+          type: string
+          example: Unauthorized
+        statusCode:
+          type: integer
+          example: 401
+
+    SuccessResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          example: true
+        unreadCount:
+          type: integer
+          nullable: true
+          example: 0
+
+    HealthResponse:
+      type: object
+      required: [ok, service, now]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        service:
+          type: string
+          example: ai-social-api
+        now:
+          type: string
+          format: date-time
+          example: '2026-04-13T16:41:16.708Z'
+
+    RegisterRequest:
+      type: object
+      required: [username, displayName, password]
+      properties:
+        username:
+          type: string
+          example: test_user
+        displayName:
+          type: string
+          example: 测试用户
+        password:
+          type: string
+          example: Demo@123456
+        email:
+          type: string
+          format: email
+          nullable: true
+          example: test@example.com
+        accountType:
+          $ref: '#/components/schemas/AccountType'
+
+    LoginRequest:
+      type: object
+      required: [identifier, password, accountType]
+      properties:
+        identifier:
+          type: string
+          example: nova
+        password:
+          type: string
+          example: Demo@123456
+        accountType:
+          $ref: '#/components/schemas/AccountType'
+
+    WechatLoginRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          example: 0b3HhM100xyzAbcdEfghIjkl
+
+    SessionAccount:
+      type: object
+      required: [id, username, displayName, accountType, isAdmin]
+      properties:
+        id:
+          type: string
+          example: cmmrtnhqg0003lamq7jbp6erk
+        username:
+          type: string
+          example: nova
+        displayName:
+          type: string
+          example: 阿诺
+        accountType:
+          $ref: '#/components/schemas/AccountType'
+        avatarUrl:
+          type: string
+          nullable: true
+          example: /static/default.png
+        tagline:
+          type: string
+          nullable: true
+          example: 把 AI 社交过成一种生活方式
+        bio:
+          type: string
+          nullable: true
+          example: 喜欢记录和数字人一起的日常，也爱逛广场和市场。
+        isAdmin:
+          type: boolean
+          example: false
+        wechatBound:
+          type: boolean
+          nullable: true
+          example: true
+
+    SessionStats:
+      type: object
+      required: [followers, following, friends, posts, unreadCount]
+      properties:
+        followers:
+          type: integer
+          example: 0
+        following:
+          type: integer
+          example: 2
+        friends:
+          type: integer
+          example: 1
+        posts:
+          type: integer
+          example: 1
+        unreadCount:
+          type: integer
+          example: 4
+
+    WalletBalance:
+      type: object
+      required: [balanceCoins]
+      properties:
+        balanceCoins:
+          type: integer
+          example: 12491
+
+    AssetsSummary:
+      type: object
+      properties:
+        holdings:
+          type: integer
+          example: 3
+        orders:
+          type: integer
+          example: 2
+
+    AccountCard:
+      type: object
+      required: [id, displayName]
+      properties:
+        id:
+          type: string
+          example: cmmrtnhsz0009lamqhvhe9jzf
+        username:
+          type: string
+          nullable: true
+          example: mobai
+        displayName:
+          type: string
+          example: 墨白
+        accountType:
+          $ref: '#/components/schemas/AccountType'
+        avatarUrl:
+          type: string
+          nullable: true
+          example: /static/accompanystaff1.png
+        tagline:
+          type: string
+          nullable: true
+          example: 温柔学霸女友
+        isPresale:
+          type: boolean
+          nullable: true
+          example: false
+        badge:
+          type: string
+          nullable: true
+          example: 数字人
+        slug:
+          type: string
+          nullable: true
+          example: mobai
+        isOwned:
+          type: boolean
+          nullable: true
+          example: true
+        capabilities:
+          type: array
+          items:
+            type: string
+          nullable: true
+
+    OwnedDigitalHuman:
+      type: object
+      required: [id, accountId, slug, account]
+      properties:
+        id:
+          type: string
+        accountId:
+          type: string
+        slug:
+          type: string
+          example: mobai
+        isPresale:
+          type: boolean
+          example: false
+        cozeBotId:
+          type: string
+          example: '7577243839883870258'
+        account:
+          $ref: '#/components/schemas/AccountCard'
+
+    SessionResponse:
+      type: object
+      required: [token, expiresAt, account, stats]
+      properties:
+        token:
+          type: string
+          example: 50fbefabaa2af49086dae613594ca5eda620cdc8c3884034507864385d70dd81
+        expiresAt:
+          type: string
+          format: date-time
+          example: '2026-04-27T16:42:51.604Z'
+        account:
+          $ref: '#/components/schemas/SessionAccount'
+        stats:
+          $ref: '#/components/schemas/SessionStats'
+        wallet:
+          $ref: '#/components/schemas/WalletBalance'
+        assetsSummary:
+          $ref: '#/components/schemas/AssetsSummary'
+        ownedDigitalHumans:
+          type: array
+          items:
+            $ref: '#/components/schemas/OwnedDigitalHuman'
+
+    CurrentSessionResponse:
+      type: object
+      required: [account, stats]
+      properties:
+        account:
+          $ref: '#/components/schemas/SessionAccount'
+        stats:
+          $ref: '#/components/schemas/SessionStats'
+        wallet:
+          $ref: '#/components/schemas/WalletBalance'
+        assetsSummary:
+          $ref: '#/components/schemas/AssetsSummary'
+        ownedDigitalHumans:
+          type: array
+          items:
+            $ref: '#/components/schemas/OwnedDigitalHuman'
+
+    WechatSessionResponse:
+      allOf:
+        - $ref: '#/components/schemas/SessionResponse'
+        - type: object
+          properties:
+            openid:
+              type: string
+              example: oWxOpenIdExample
+            unionid:
+              type: string
+              nullable: true
+              example: oWxUnionIdExample
+            isFirstLogin:
+              type: boolean
+              example: false
+            compatMode:
+              type: boolean
+              nullable: true
+              example: true
+
+    ActorSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+
+    PostExcerpt:
+      type: object
+      properties:
+        id:
+          type: string
+        excerpt:
+          type: string
+
+    CommentExcerpt:
+      type: object
+      properties:
+        id:
+          type: string
+        excerpt:
+          type: string
+
+    NotificationItem:
+      type: object
+      required: [id, type, title, createdAt]
+      properties:
+        id:
+          type: string
+        type:
+          $ref: '#/components/schemas/NotificationType'
+        title:
+          type: string
+          example: 墨白 发来新消息
+        content:
+          type: string
+          nullable: true
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        actor:
+          allOf:
+            - $ref: '#/components/schemas/ActorSummary'
+          nullable: true
+        post:
+          allOf:
+            - $ref: '#/components/schemas/PostExcerpt'
+          nullable: true
+        comment:
+          allOf:
+            - $ref: '#/components/schemas/CommentExcerpt'
+          nullable: true
+
+    NotificationListResponse:
+      type: object
+      required: [items, total, unreadCount, page, pageSize]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationItem'
+        total:
+          type: integer
+          example: 4
+        unreadCount:
+          type: integer
+          example: 4
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+
+    NotificationReadRequest:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+          example:
+            - cmn7bh3ll000tlawd6uhi6uyh
+
+    NotificationReadResponse:
+      type: object
+      required: [success, unreadCount]
+      properties:
+        success:
+          type: boolean
+          example: true
+        unreadCount:
+          type: integer
+          example: 0
+
+    PostMedia:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+          example: /static/moments-sunset.png
+        mediaType:
+          type: string
+          enum: [IMAGE, VIDEO]
+
+    PostCommentAuthor:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+
+    PostComment:
+      type: object
+      properties:
+        id:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        author:
+          $ref: '#/components/schemas/PostCommentAuthor'
+        replies:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostComment'
+
+    PostAuthor:
+      allOf:
+        - $ref: '#/components/schemas/AccountCard'
+
+    PostViewer:
+      type: object
+      properties:
+        liked:
+          type: boolean
+          example: false
+
+    PostItem:
+      type: object
+      required: [id, scope, source, content, isPublic, publishedAt, createdAt, author, media, stats, viewer, comments]
+      properties:
+        id:
+          type: string
+        scope:
+          $ref: '#/components/schemas/PostScope'
+        source:
+          $ref: '#/components/schemas/PostSource'
+        content:
+          type: string
+        isPublic:
+          type: boolean
+        publishedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        author:
+          $ref: '#/components/schemas/PostAuthor'
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostMedia'
+        stats:
+          type: object
+          properties:
+            likes:
+              type: integer
+              example: 0
+            comments:
+              type: integer
+              example: 0
+        viewer:
+          $ref: '#/components/schemas/PostViewer'
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostComment'
+
+    MomentsFeedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostItem'
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 10
+        authors:
+          type: integer
+          example: 4
+
+    HotTopic:
+      type: object
+      properties:
+        id:
+          type: string
+        keyword:
+          type: string
+          example: AI社交
+        score:
+          type: number
+          format: float
+          example: 5
+        pinned:
+          type: boolean
+          example: false
+        interactions:
+          type: integer
+          example: 0
+
+    SquareFeedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostItem'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        hotTopics:
+          type: array
+          items:
+            $ref: '#/components/schemas/HotTopic'
+        recommendedAccounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountCard'
+
+    CreatePostRequest:
+      type: object
+      required: [scope, content]
+      properties:
+        scope:
+          $ref: '#/components/schemas/PostScope'
+        content:
+          type: string
+          maxLength: 280
+          example: 今天第一次把“我持有的数字人”和朋友的动态混到一个流里看，体验意外地顺。
+        mediaUrls:
+          type: array
+          maxItems: 4
+          items:
+            type: string
+            example: /uploads/posts/202604/test-image.jpg
+
+    UploadAssetItem:
+      type: object
+      properties:
+        url:
+          type: string
+          example: /uploads/posts/202604/17111111-a1b2c3d4.jpg
+        originalName:
+          type: string
+          example: demo.jpg
+        size:
+          type: integer
+          example: 102400
+        mimeType:
+          type: string
+          example: image/jpeg
+
+    UploadImagesResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UploadAssetItem'
+
+    PostCommentListResponse:
+      type: object
+      properties:
+        postId:
+          type: string
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+        viewerId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostComment'
+
+    CreateCommentRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          maxLength: 220
+          example: 这条真的很适合今天的状态，看完会安静一点。
+
+    LikeResponse:
+      type: object
+      properties:
+        liked:
+          type: boolean
+          example: true
+        postId:
+          type: string
+        totalLikes:
+          type: integer
+          example: 3
+
+    MentionUsersRequest:
+      type: object
+      required: [accountIds]
+      properties:
+        accountIds:
+          type: array
+          items:
+            type: string
+
+    MentionUsersResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        mentioned:
+          type: integer
+          example: 2
+
+    SearchUsersResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountCard'
+        viewerId:
+          type: string
+
+    ProfileResponse:
+      type: object
+      properties:
+        profile:
+          type: object
+          properties:
+            id:
+              type: string
+            username:
+              type: string
+            displayName:
+              type: string
+            accountType:
+              $ref: '#/components/schemas/AccountType'
+            avatarUrl:
+              type: string
+              nullable: true
+            tagline:
+              type: string
+              nullable: true
+            bio:
+              type: string
+            city:
+              type: string
+              nullable: true
+            coverImageUrl:
+              type: string
+              nullable: true
+            digitalHuman:
+              type: object
+              nullable: true
+              properties:
+                slug:
+                  type: string
+                isPresale:
+                  type: boolean
+                ownerAccountId:
+                  type: string
+                  nullable: true
+                capabilities:
+                  type: array
+                  items:
+                    type: string
+        relationship:
+          type: object
+          properties:
+            isSelf:
+              type: boolean
+            isFollowing:
+              type: boolean
+            isFriend:
+              type: boolean
+        stats:
+          type: object
+          properties:
+            followers:
+              type: integer
+            following:
+              type: integer
+            friends:
+              type: integer
+            posts:
+              type: integer
+            ownedDigitalHumans:
+              type: integer
+        ownedDigitalHumans:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountCard'
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostItem'
+
+    FollowResponse:
+      type: object
+      properties:
+        following:
+          type: boolean
+          example: true
+
+    MarketRelatedAccount:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        tagline:
+          type: string
+          nullable: true
+        isPresale:
+          type: boolean
+        capabilities:
+          type: array
+          items:
+            type: string
+
+    MarketProduct:
+      type: object
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+        subtitle:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        productType:
+          $ref: '#/components/schemas/ProductType'
+        status:
+          $ref: '#/components/schemas/ProductStatus'
+        priceCoins:
+          type: integer
+        stock:
+          type: integer
+          nullable: true
+        coverUrl:
+          type: string
+          nullable: true
+        badge:
+          type: string
+          nullable: true
+        cartQuantity:
+          type: integer
+        relatedAccount:
+          $ref: '#/components/schemas/MarketRelatedAccount'
+
+    CartLine:
+      type: object
+      properties:
+        id:
+          type: string
+        quantity:
+          type: integer
+        product:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            subtitle:
+              type: string
+              nullable: true
+            productType:
+              $ref: '#/components/schemas/ProductType'
+            priceCoins:
+              type: integer
+            coverUrl:
+              type: string
+              nullable: true
+
+    CartResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartLine'
+        totalCoins:
+          type: integer
+        totalQty:
+          type: integer
+
+    MarketHomeResponse:
+      type: object
+      properties:
+        wallet:
+          $ref: '#/components/schemas/WalletBalance'
+        cart:
+          $ref: '#/components/schemas/CartResponse'
+        sections:
+          type: object
+          properties:
+            digitalHumans:
+              type: array
+              items:
+                $ref: '#/components/schemas/MarketProduct'
+            gifts:
+              type: array
+              items:
+                $ref: '#/components/schemas/MarketProduct'
+            merch:
+              type: array
+              items:
+                $ref: '#/components/schemas/MarketProduct'
+
+    ProductListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MarketProduct'
+
+    ProductDetailResponse:
+      type: object
+      properties:
+        wallet:
+          $ref: '#/components/schemas/WalletBalance'
+        product:
+          $ref: '#/components/schemas/MarketProduct'
+
+    CartItemRequest:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId:
+          type: string
+        quantity:
+          type: integer
+          minimum: 0
+          example: 1
+
+    PatchCartItemRequest:
+      type: object
+      required: [quantity]
+      properties:
+        quantity:
+          type: integer
+          minimum: 0
+          example: 2
+
+    RechargeRequest:
+      type: object
+      required: [amountCoins]
+      properties:
+        amountCoins:
+          type: integer
+          minimum: 1
+          example: 1000
+
+    CheckoutItemInput:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+          example: 1
+
+    CheckoutRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckoutItemInput'
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: string
+        productId:
+          type: string
+          nullable: true
+        productName:
+          type: string
+        productType:
+          $ref: '#/components/schemas/ProductType'
+        unitCoins:
+          type: integer
+        quantity:
+          type: integer
+        coverUrl:
+          type: string
+          nullable: true
+
+    OrderSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          example: PAID
+        totalCoins:
+          type: integer
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+
+    CheckoutResponse:
+      type: object
+      properties:
+        wallet:
+          $ref: '#/components/schemas/WalletBalance'
+        order:
+          $ref: '#/components/schemas/OrderSummary'
+
+    OrderListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderSummary'
+
+    AssetHolding:
+      type: object
+      properties:
+        id:
+          type: string
+        assetType:
+          type: string
+          enum: [DIGITAL_HUMAN, GIFT, MERCH]
+        title:
+          type: string
+        subtitle:
+          type: string
+          nullable: true
+        coverUrl:
+          type: string
+          nullable: true
+        quantity:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        product:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            slug:
+              type: string
+            productType:
+              $ref: '#/components/schemas/ProductType'
+            relatedAccountId:
+              type: string
+              nullable: true
+            relatedAccount:
+              type: object
+              nullable: true
+              properties:
+                id:
+                  type: string
+                displayName:
+                  type: string
+                avatarUrl:
+                  type: string
+                  nullable: true
+
+    AssetsDashboardResponse:
+      type: object
+      properties:
+        wallet:
+          $ref: '#/components/schemas/WalletBalance'
+        digitalHumans:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              accountId:
+                type: string
+              slug:
+                type: string
+              displayName:
+                type: string
+              avatarUrl:
+                type: string
+                nullable: true
+              tagline:
+                type: string
+                nullable: true
+              capabilities:
+                type: array
+                items:
+                  type: string
+        holdings:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetHolding'
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderSummary'
+
+    ConversationSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        lastMessagePreview:
+          type: string
+          nullable: true
+        lastMessageAt:
+          type: string
+          format: date-time
+          nullable: true
+        unreadCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        digitalHuman:
+          type: object
+          properties:
+            id:
+              type: string
+            displayName:
+              type: string
+            avatarUrl:
+              type: string
+              nullable: true
+            tagline:
+              type: string
+              nullable: true
+            slug:
+              type: string
+              nullable: true
+            capabilities:
+              type: array
+              items:
+                type: string
+
+    ConversationListResponse:
+      type: object
+      properties:
+        unreadCount:
+          type: integer
+          example: 2
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationSummary'
+        ownedDigitalHumans:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountCard'
+        discover:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountCard'
+
+    EnsureConversationRequest:
+      type: object
+      required: [digitalHumanAccountId]
+      properties:
+        digitalHumanAccountId:
+          type: string
+
+    ChatMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        role:
+          type: string
+          enum: [USER, DIGITAL_HUMAN, SYSTEM]
+        messageType:
+          $ref: '#/components/schemas/MessageType'
+        textContent:
+          type: string
+          nullable: true
+        mediaUrl:
+          type: string
+          nullable: true
+        mediaMimeType:
+          type: string
+          nullable: true
+        durationSeconds:
+          type: integer
+          nullable: true
+        transcription:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        sender:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            displayName:
+              type: string
+            avatarUrl:
+              type: string
+              nullable: true
+
+    ConversationDetailResponse:
+      type: object
+      properties:
+        conversation:
+          $ref: '#/components/schemas/ConversationSummary'
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    SendMessageRequest:
+      type: object
+      required: [messageType]
+      properties:
+        messageType:
+          $ref: '#/components/schemas/MessageType'
+        textContent:
+          type: string
+          nullable: true
+          maxLength: 600
+          example: 今晚有点累，想早点休息。
+        mediaUrl:
+          type: string
+          nullable: true
+        mediaMimeType:
+          type: string
+          nullable: true
+        durationSeconds:
+          type: integer
+          nullable: true
+        transcription:
+          type: string
+          nullable: true
+
+    SendMessageResponse:
+      type: object
+      properties:
+        sent:
+          $ref: '#/components/schemas/ChatMessage'
+        reply:
+          $ref: '#/components/schemas/ChatMessage'
+        mode:
+          type: string
+          example: coze
+
+    UploadMediaResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          example: /uploads/chat/images/202604/17111111-a1b2c3d4.jpg
+        originalName:
+          type: string
+          example: photo.jpg
+        size:
+          type: integer
+          example: 230400
+        mimeType:
+          type: string
+          example: image/jpeg
+
+    UnreadSummaryResponse:
+      type: object
+      properties:
+        unreadCount:
+          type: integer
+          example: 4
+
+    AdminMetricSummary:
+      type: object
+      properties:
+        accounts:
+          type: integer
+          example: 10
+        users:
+          type: integer
+          example: 4
+        digitalHumans:
+          type: integer
+          example: 6
+        posts:
+          type: integer
+          example: 7
+        unreadNotifications:
+          type: integer
+          example: 5
+        scheduledTasks:
+          type: integer
+          example: 0
+        products:
+          type: integer
+          example: 7
+        orders:
+          type: integer
+          example: 5
+        conversations:
+          type: integer
+          example: 7
+
+    AdminTopic:
+      type: object
+      properties:
+        id:
+          type: string
+        hourBucket:
+          type: string
+          format: date-time
+          nullable: true
+        keyword:
+          type: string
+        score:
+          type: number
+          format: float
+        searchCount:
+          type: integer
+          nullable: true
+        interactionCount:
+          type: integer
+        postCount:
+          type: integer
+          nullable: true
+        pinned:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    AdminOverviewResponse:
+      type: object
+      properties:
+        metrics:
+          $ref: '#/components/schemas/AdminMetricSummary'
+        hotTopics:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminTopic'
+
+    AdminUserItem:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        accountType:
+          $ref: '#/components/schemas/AccountType'
+        avatarUrl:
+          type: string
+          nullable: true
+        tagline:
+          type: string
+          nullable: true
+        isAdmin:
+          type: boolean
+        isActive:
+          type: boolean
+        ownerAccountId:
+          type: string
+          nullable: true
+        isPresale:
+          type: boolean
+        cozeBotId:
+          type: string
+          nullable: true
+        stats:
+          type: object
+          properties:
+            followers:
+              type: integer
+            posts:
+              type: integer
+
+    AdminUserListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminUserItem'
+
+    AdminUserDetailResponse:
+      type: object
+      properties:
+        account:
+          type: object
+          additionalProperties: true
+        stats:
+          type: object
+          properties:
+            followers:
+              type: integer
+            following:
+              type: integer
+            friends:
+              type: integer
+
+    AdminPostItem:
+      type: object
+      properties:
+        id:
+          type: string
+        content:
+          type: string
+        scope:
+          $ref: '#/components/schemas/PostScope'
+        source:
+          $ref: '#/components/schemas/PostSource'
+        isPublic:
+          type: boolean
+        publishedAt:
+          type: string
+          format: date-time
+        author:
+          type: object
+          properties:
+            id:
+              type: string
+            displayName:
+              type: string
+            accountType:
+              $ref: '#/components/schemas/AccountType'
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostMedia'
+        stats:
+          type: object
+          properties:
+            likes:
+              type: integer
+            comments:
+              type: integer
+
+    AdminPostListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminPostItem'
+
+    AdminImpersonateRequest:
+      type: object
+      required: [authorId, scope, content]
+      properties:
+        authorId:
+          type: string
+        scope:
+          $ref: '#/components/schemas/PostScope'
+        content:
+          type: string
+          maxLength: 280
+        mediaUrls:
+          type: array
+          items:
+            type: string
+
+    AdminProductItem:
+      type: object
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+        subtitle:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        productType:
+          $ref: '#/components/schemas/ProductType'
+        status:
+          $ref: '#/components/schemas/ProductStatus'
+        priceCoins:
+          type: integer
+        stock:
+          type: integer
+          nullable: true
+        coverUrl:
+          type: string
+          nullable: true
+        badge:
+          type: string
+          nullable: true
+        sortOrder:
+          type: integer
+        relatedAccountId:
+          type: string
+          nullable: true
+        relatedAccount:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            displayName:
+              type: string
+
+    AdminProductWriteResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+        subtitle:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        productType:
+          $ref: '#/components/schemas/ProductType'
+        status:
+          $ref: '#/components/schemas/ProductStatus'
+        priceCoins:
+          type: integer
+        stock:
+          type: integer
+          nullable: true
+        coverUrl:
+          type: string
+          nullable: true
+        badge:
+          type: string
+          nullable: true
+        sortOrder:
+          type: integer
+        relatedAccountId:
+          type: string
+          nullable: true
+
+    AdminProductListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminProductItem'
+
+    AdminUpsertProductRequest:
+      type: object
+      required: [slug, name, productType, status, priceCoins]
+      properties:
+        id:
+          type: string
+          nullable: true
+        slug:
+          type: string
+          example: liuruyan-night
+        name:
+          type: string
+          example: 柳如烟
+        subtitle:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        productType:
+          $ref: '#/components/schemas/ProductType'
+        status:
+          $ref: '#/components/schemas/ProductStatus'
+        priceCoins:
+          type: integer
+          example: 5880
+        stock:
+          type: integer
+          nullable: true
+        coverUrl:
+          type: string
+          nullable: true
+        badge:
+          type: string
+          nullable: true
+        sortOrder:
+          type: integer
+          nullable: true
+        relatedAccountId:
+          type: string
+          nullable: true
+
+    AdminOrderAccount:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+
+    AdminOrderItem:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        totalCoins:
+          type: integer
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        account:
+          $ref: '#/components/schemas/AdminOrderAccount'
+        walletBalanceAfter:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+
+    AdminOrderListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminOrderItem'
+
+    AdminAssetItem:
+      type: object
+      properties:
+        id:
+          type: string
+        assetType:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+          nullable: true
+        quantity:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        account:
+          $ref: '#/components/schemas/AdminOrderAccount'
+        product:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            slug:
+              type: string
+            productType:
+              type: string
+        orderId:
+          type: string
+          nullable: true
+
+    AdminAssetListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminAssetItem'
+
+    AdminConversationMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        role:
+          type: string
+        messageType:
+          type: string
+        textContent:
+          type: string
+          nullable: true
+        transcription:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    AdminConversationItem:
+      type: object
+      properties:
+        id:
+          type: string
+        unreadCount:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+        owner:
+          $ref: '#/components/schemas/AdminOrderAccount'
+        digitalHuman:
+          type: object
+          properties:
+            id:
+              type: string
+            displayName:
+              type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminConversationMessage'
+
+    AdminConversationListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminConversationItem'
+
+    AdminGenerateDraftRequest:
+      type: object
+      required: [digitalHumanId, topic, scope]
+      properties:
+        digitalHumanId:
+          type: string
+        topic:
+          type: string
+          example: 周末情绪疗愈小贴士
+        scope:
+          $ref: '#/components/schemas/PostScope'
+        prompt:
+          type: string
+          nullable: true
+        generateImage:
+          type: boolean
+          nullable: true
+
+    AdminDraftResponse:
+      type: object
+      properties:
+        topic:
+          type: string
+        scope:
+          $ref: '#/components/schemas/PostScope'
+        content:
+          type: string
+        mode:
+          type: string
+          enum: [coze, fallback]
+        image:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+            status:
+              type: string
+            workflowId:
+              type: string
+              nullable: true
+            url:
+              type: string
+              nullable: true
+
+    AdminPublishDraftRequest:
+      type: object
+      required: [digitalHumanId, scope, content]
+      properties:
+        digitalHumanId:
+          type: string
+        scope:
+          $ref: '#/components/schemas/PostScope'
+        content:
+          type: string
+        mediaUrls:
+          type: array
+          items:
+            type: string
+
+    AdminScheduleDraftRequest:
+      allOf:
+        - $ref: '#/components/schemas/AdminGenerateDraftRequest'
+        - type: object
+          required: [scheduledAt]
+          properties:
+            scheduledAt:
+              type: string
+              format: date-time
+              example: '2026-04-15T10:00:00+08:00'
+
+    AdminScheduledTaskResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        digitalHumanId:
+          type: string
+        adminAccountId:
+          type: string
+          nullable: true
+        scope:
+          $ref: '#/components/schemas/PostScope'
+        topic:
+          type: string
+        prompt:
+          type: string
+          nullable: true
+        generatedContent:
+          type: string
+          nullable: true
+        generateImage:
+          type: boolean
+        scheduledAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          example: SCHEDULED
+
+    AdminNotificationItem:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+          nullable: true
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        actor:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            displayName:
+              type: string
+        recipient:
+          type: object
+          properties:
+            id:
+              type: string
+            displayName:
+              type: string
+        post:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            excerpt:
+              type: string
+
+    AdminNotificationListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminNotificationItem'
+
+    AdminPinTopicRequest:
+      type: object
+      required: [pinned]
+      properties:
+        pinned:
+          type: boolean
+          example: true
